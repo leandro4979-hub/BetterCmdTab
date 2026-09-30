@@ -112,7 +112,7 @@ final class ShortcutsEditorView: NSView {
     /// for items that no longer exist. Plain selection changes go through
     /// `showSelected` and reuse the cache, so they stay instant.
     func rebuildTabs(select index: Int) {
-        targets = [.switchApps, .switchWindows] + Preferences.shared.scopedShortcuts.map { .scoped($0.id) }
+        targets = Self.profileTargets
 
         // Drop cached panels whose target is gone (removed scoped shortcut).
         let valid = Set(targets.map(\.storageKey))
@@ -124,7 +124,7 @@ final class ShortcutsEditorView: NSView {
         }
 
         selectedIndex = max(0, min(index, targets.count - 1))
-        list.reload(items: listItems(), selectedIndex: selectedIndex)
+        list.reload(items: Self.listItems(for: targets), selectedIndex: selectedIndex)
         showSelected()
     }
 
@@ -132,10 +132,14 @@ final class ShortcutsEditorView: NSView {
     /// trigger changes so each row's trailing glyph stays current.
     private func refreshListItems() {
         guard !targets.isEmpty else { return }
-        list.reload(items: listItems(), selectedIndex: selectedIndex)
+        list.reload(items: Self.listItems(for: targets), selectedIndex: selectedIndex)
     }
 
-    private func listItems() -> [ShortcutsListView.Item] {
+    static var profileTargets: [SwitchTarget] {
+        [.switchApps, .switchWindows] + Preferences.shared.scopedShortcuts.map { .scoped($0.id) }
+    }
+
+    static func listItems(for targets: [SwitchTarget]) -> [ShortcutsListView.Item] {
         targets.enumerated().map { index, target in
             ShortcutsListView.Item(
                 icon: icon(for: target),
@@ -148,7 +152,7 @@ final class ShortcutsEditorView: NSView {
 
     /// List label: core triggers by name, scoped ones as "Shortcut N" (1-based
     /// position) to match AltTab.
-    private func label(for target: SwitchTarget, at index: Int) -> String {
+    private static func label(for target: SwitchTarget, at index: Int) -> String {
         switch target {
         case .switchApps: return String(localized: "Apps")
         case .switchWindows: return String(localized: "Windows")
@@ -156,7 +160,7 @@ final class ShortcutsEditorView: NSView {
         }
     }
 
-    private func icon(for target: SwitchTarget) -> String {
+    private static func icon(for target: SwitchTarget) -> String {
         switch target {
         case .switchApps: return "command"
         case .switchWindows: return "macwindow"
@@ -166,7 +170,7 @@ final class ShortcutsEditorView: NSView {
 
     /// Trailing detail: the recorded trigger's glyphs, plus the scope for a scoped
     /// shortcut. Empty when nothing is recorded yet.
-    private func detail(for target: SwitchTarget) -> String {
+    private static func detail(for target: SwitchTarget) -> String {
         var parts: [String] = []
         if let shortcut = betterShortcutsName(for: target).shortcut { parts.append(shortcut.presentableDescription) }
         if case .scoped(let id) = target,
@@ -180,12 +184,12 @@ final class ShortcutsEditorView: NSView {
         targets.indices.contains(selectedIndex) ? targets[selectedIndex] : nil
     }
 
-    private func isScoped(_ target: SwitchTarget) -> Bool {
+    private static func isScoped(_ target: SwitchTarget) -> Bool {
         if case .scoped = target { return true }
         return false
     }
 
-    private func betterShortcutsName(for target: SwitchTarget) -> BetterShortcuts.Name {
+    private static func betterShortcutsName(for target: SwitchTarget) -> BetterShortcuts.Name {
         switch target {
         case .switchApps: return .switchApps
         case .switchWindows: return .switchWindows
@@ -226,7 +230,7 @@ final class ShortcutsEditorView: NSView {
         stack.spacing = 18
         stack.translatesAutoresizingMaskIntoConstraints = false
 
-        let scoped = isScoped(target)
+        let scoped = Self.isScoped(target)
 
         // Trigger card.
         let trigger = SettingsSectionView(title: String(localized: "Trigger"))
@@ -235,7 +239,7 @@ final class ShortcutsEditorView: NSView {
         // global slot that must not shadow them (issue #16).
         var triggerPolicy = BetterShortcuts.recorderPolicy
         triggerPolicy.rejectsReservedShortcuts = scoped
-        let recorder = BetterShortcuts.RecorderCocoa(for: betterShortcutsName(for: target), policy: triggerPolicy)
+        let recorder = BetterShortcuts.RecorderCocoa(for: Self.betterShortcutsName(for: target), policy: triggerPolicy)
         trigger.addContent(SettingsRowView(
             title: String(localized: "Keyboard shortcut"),
             subtitle: scoped

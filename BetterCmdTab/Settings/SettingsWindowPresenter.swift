@@ -33,7 +33,7 @@ final class SettingsWindowPresenter {
 
     private init() {}
 
-    func show() {
+    func show(selecting tabID: String? = nil) {
         // The app normally runs as `.accessory` (no Dock icon, menu-bar only).
         // An accessory app can't pull a window in front of the active app —
         // `NSApp.activate(ignoringOtherApps:)` is weakened for accessory apps on
@@ -41,7 +41,7 @@ final class SettingsWindowPresenter {
         // `.regular` so the app can activate as a normal foreground app; revert
         // to `.accessory` once the window closes so the Dock icon doesn't linger.
         NSApp.setActivationPolicy(.regular)
-        presenter.show()
+        presenter.show(selecting: tabID)
 
         // Resolve the settings window by class, not `NSApp.keyWindow`: on a
         // reopen with an attached sheet (apps picker) or the color panel key,

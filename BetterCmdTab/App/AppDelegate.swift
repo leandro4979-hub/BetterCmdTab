@@ -9,6 +9,7 @@ import os
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var controller: SwitcherController?
     private var statusItem: NSStatusItem?
+    private let statusMenu = StatusMenu()
     private var axWaiter: AccessibilityWaiter?
     private var cancellables = Set<AnyCancellable>()
 
@@ -207,31 +208,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.image = NSImage(systemSymbolName: "command", accessibilityDescription: "BetterCmdTab")
             button.image?.isTemplate = true
         }
-        let menu = NSMenu()
-
-        let settingsItem = NSMenuItem(
-            title: String(localized: "Settings…"),
-            action: #selector(openSettings),
-            keyEquivalent: ","
-        )
-        settingsItem.target = self
-        menu.addItem(settingsItem)
-
-        menu.addItem(NSMenuItem.separator())
-
-        let quitItem = NSMenuItem(title: String(localized: "Quit BetterCmdTab"), action: #selector(quit), keyEquivalent: "q")
-        quitItem.target = self
-        menu.addItem(quitItem)
-        item.menu = menu
+        item.menu = statusMenu.menu
+        statusMenu.statusButton = item.button
         statusItem = item
-    }
-
-    @objc private func openSettings() {
-        SettingsWindowPresenter.shared.show()
-    }
-
-    @objc private func quit() {
-        NSApp.terminate(nil)
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
